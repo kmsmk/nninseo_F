@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <title>과제 3</title>
+    <script src="https://cdn.jsdelivr.net/npm/p5@1.9.0/lib/p5.min.js"></script>
+    <script src="https://unpkg.com/p5.gif/dist/p5.gif.min.js"></script>
+  </head>
+  <body>
+    <script>
+      let cx, cy = 0, vy = 0, onGround = true, facing = 1;
+      let mouthOpen = false, blinkUntil = 0, nextBlink = 30;
+      let hairMode = 0, shirtMode = 0, cloudShift = 0, sunShift = 0;
+
+      const SKY_DAY = '#8fd0f1';
+      const SKY_DUSK = '#ffb07a';
+      const GRASS = '#7CFF00';
+      const SUN_DAY = '#FFD200';
+      const SUN_DUSK = '#FF8C00';
+      const CLOUD = '#FFFFFF';
+      const SKIN = '#F8D2BA';
+      const HAIR = '#2E3237';
+      const EYE = '#1A1A1A';
+      const SHIRT0 = '#616971';
+      const SHIRT1 = '#3C78D8';
+      const SHIRT2 = '#E67E22';
+      const MOUTH = '#E4493D';
+
+      function setup() {
+        createCanvas(600, 400);
+        pixelDensity(1);
+        frameRate(10);
+        noSmooth();
+        cx = width / 2;
+      }
+
+      function draw() {
+        cloudShift = (cloudShift + 0.5) % (width + 200);
+        sunShift = 2 * sin(frameCount * 0.05);
+
+        drawSkySolid();
+        drawSun();
+        drawClouds();
+
+        fill(GRASS);
+        noStroke();
+        rect(0, 260, width, 140);
+
+        applyPhysics();
+
+        push();
+        translate(cx, cy);
+        scale(facing, 1);
+        drawFace();
+        drawNeckShirt();
+        pop();
+
+        drawBird();
+
+        updateBlink();
+      }
+
+      function drawSkySolid() {
+        let phase = (sin(frameCount * 0.02) + 1) * 0.5;
+        let c = lerpColor(color(SKY_DAY), color(SKY_DUSK), phase);
+        background(c);
+      }
+
+      function drawSun() {
+        let phase = (sin(frameCount * 0.02) + 1) * 0.5;
+        let c = lerpColor(color(SUN_DAY), color(SUN_DUSK), phase);
+        let yPos = lerp(70, 120, phase) + sunShift;
+        noStroke();
+        fill(c);
+        circle(500, yPos, 80);
+      }
+
+      function drawClouds() {
+        fill(CLOUD);
+        noStroke();
+        ellipse(150 - cloudShift, 70, 120, 70);
+        ellipse(200 - cloudShift, 85, 80, 45);
+        ellipse(400 - (cloudShift * 0.8), 90, 130, 60);
+        ellipse(550 - (cloudShift * 1.2), 60, 100, 55);
+      }
+
+      function drawBird() {
+        let x = (frameCount * 3.0) % (width + 80) - 40;
+        let y = 100 + 8 * sin(frameCount * 0.08);
+        push();
+        translate(x, y);
+        noStroke();
+        fill(40);
+        ellipse(0, 0, 22, 12);
+        let a = radians(28) * sin(frameCount * 0.5);
+        push(); translate(-6, 0); rotate(-a); triangle(0, 0, -18, -6, -18, 6); pop();
+        push(); translate(6, 0); rotate(a); triangle(0, 0, 18, -6, 18, 6); pop();
+        pop();
+      }
+
+      function applyPhysics() {
+        let s = 2.5;
+        if (keyIsDown(LEFT_ARROW))  { cx -= s; facing = -1; }
+        if (keyIsDown(RIGHT_ARROW)) { cx += s; facing =  1; }
+        cx = constrain(cx, 80, width - 80);
+
+        vy += 0.9;
+        cy += vy;
+        if (cy >= 0) { cy = 0; vy = 0; onGround = true; }
+      }
+
+      function keyPressed() {
+        if (keyCode === 32 && onGround) { vy = -11.5; onGround = false; }
+        if (key === 'h') hairMode = (hairMode + 1) % 3;
+        if (key === 'c') shirtMode = (shirtMode + 1) % 3;
+        if (key === 'g') if (typeof saveGif === 'function') saveGif('assignment3_caricature', 10);
+      }
+
+      function mousePressed() {
+        mouthOpen = !mouthOpen;
+        saveCanvas('pop_portrait_hair_front_600x400', 'png');
+        blinkUntil = frameCount + 8;
+      }
+
+      function updateBlink() {
+        if (frameCount > nextBlink) {
+          blinkUntil = frameCount + 8;
+          nextBlink = frameCount + int(random(8, 18));
+        }
+      }
+
+      function isBlinking() {
+        return frameCount < blinkUntil;
+      }
+
+      function drawFace() {
+        noStroke();
+        fill(SKIN);
+        rect(-70, 150, 140, 110, 16);
+        fill(SKIN);
+        rect(-92, 170, 26, 38, 8);
+        rect(66, 170, 26, 38, 8);
+
+        fill(HAIR);
+        rect(-90, 115, 180, 52, 12);
+
+        stroke('#1f2327');
+        strokeWeight(3);
+        if (hairMode === 0) {
+          for (let x = -70; x <= 70; x += 16) line(x, 133, x, 157);
+        } else if (hairMode === 1) {
+          for (let x = -70; x <= 70; x += 16) {
+            let h = (abs(x) < 8) ? 10 : 24;
+            line(x, 133, x, 133 + h);
+          }
+        } else {
+          for (let x = -70; x <= 70; x += 16) {
+            let h = 18 + 6 * sin((frameCount * 0.3) + x * 0.2);
+            line(x, 135, x, 135 + h);
+          }
+        }
+
+        noStroke();
+
+        fill('#FFFFFF');
+        rect(-38, 182, 24, 18, 4);
+        rect(14, 182, 24, 18, 4);
+
+        let bs = isBlinking() ? 0.15 : 1.0;
+        let eyeY = 182 + 9;
+
+        let pxL = map(mouseX, 0, width, -38 + 4, -38 + 20);
+        let pxR = map(mouseX, 0, width,  14 + 4,  14 + 20);
+        let py  = map(mouseY, 0, height, eyeY - 3, eyeY + 3);
+
+        fill(EYE);
+        ellipse(pxL + 12, py, 7, 7 * bs);
+        ellipse(pxR + 12, py, 7, 7 * bs);
+
+        stroke(30);
+        strokeWeight(2);
+        noFill();
+        bezier(-46, 176, -36, 168, -28, 168, -18, 176);
+        bezier(46, 176, 36, 168, 28, 168, 18, 176);
+        noStroke();
+
+        fill(90, 70);
+        triangle(-2, 202, 2, 202, 0, 210);
+
+        if (mouthOpen) {
+          noStroke();
+          fill(MOUTH);
+          ellipse(0, 208, 24, 16);
+          fill(255, 120);
+          rect(-7, 206, 14, 3, 2);
+        } else {
+          noFill();
+          stroke(MOUTH);
+          strokeWeight(5);
+          arc(0, 208, 36, 22, 0, PI);
+          noStroke();
+        }
+      }
+
+      function drawNeckShirt() {
+        noStroke();
+        fill(SKIN);
+        rect(-18, 260, 36, 38);
+
+        if (shirtMode === 0) fill(SHIRT0);
+        else if (shirtMode === 1) fill(SHIRT1);
+        else fill(SHIRT2);
+
+        rect(-95, 290, 190, 90, 10);
+      }
+    </script>
+  </body>
+</html>
