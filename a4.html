@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <title>과제 4</title>
+    <script src="https://cdn.jsdelivr.net/npm/p5@1.9.0/lib/p5.min.js"></script>
+    <script src="https://unpkg.com/p5.gif/dist/p5.gif.min.js"></script>
+  </head>
+  <body>
+    <script>
+      let bodyColor1;
+      let bodyColor2;
+      let pantsColor1;
+      let pantsColor2;
+      let bgBaseHue;
+      let bubbles = [];
+      let sandDots = [];
+      let recording = false;
+
+      function setup() {
+        createCanvas(600, 400);
+        colorMode(HSB, 360, 100, 100);
+
+        bgBaseHue = random(160, 220);
+        bodyColor1 = color(340, 40, 100);
+        bodyColor2 = color(15, 90, 100);
+        pantsColor1 = color(120, 60, 90);
+        pantsColor2 = color(200, 60, 90);
+
+        for (let i = 0; i < 40; i++) {
+          bubbles.push({
+            x: random(width),
+            y: random(height, height + 200),
+            r: random(8, 22),
+            speed: random(0.5, 1.8),
+            offset: random(TWO_PI)
+          });
+        }
+
+        for (let i = 0; i < 120; i++) {
+          sandDots.push({
+            x: random(width),
+            y: random(height),
+            r: random(2, 5),
+            b: random(80, 95),
+            h: random(30, 50)
+          });
+        }
+      }
+
+      function draw() {
+        let t = millis() * 0.001;
+        let amt = (sin(t) + 1) / 2;
+
+        background(42, 30, 95);
+
+        noStroke();
+        for (let d of sandDots) {
+          fill(d.h, 20, d.b);
+          circle(d.x, d.y, d.r);
+        }
+
+        for (let b of bubbles) {
+          let wobble = sin(t * 2 + b.offset) * 4;
+          b.y -= b.speed;
+          b.x += wobble * 0.02;
+
+          if (b.y < -40) {
+            b.y = random(height + 40, height + 200);
+            b.x = random(width);
+            b.r = random(8, 22);
+            b.speed = random(0.5, 1.8);
+            b.offset = random(TWO_PI);
+          }
+
+          let bh = (bgBaseHue + 40) % 360;
+          fill(bh, 20, 100, 40);
+          circle(b.x, b.y, b.r * (1.0 + 0.2 * sin(t * 3 + b.offset)));
+          fill(bh, 10, 100, 60);
+          circle(b.x - b.r * 0.2, b.y - b.r * 0.2, b.r * 0.4);
+        }
+
+        let bodyColor = lerpColor(bodyColor1, bodyColor2, amt);
+        let pantsColor = lerpColor(
+          pantsColor1,
+          pantsColor2,
+          (sin(t * 1.5) + 1) / 2
+        );
+
+        let bobX = sin(frameCount * 0.03) * 18;
+        let bobY = cos(frameCount * 0.025) * 10;
+        let scaleAmt = 0.9 + 0.12 * sin(t * 2);
+        let tilt = sin(t * 1.3) * 0.05;
+
+        push();
+        translate(width * 0.05 + bobX, bobY + 10);
+        translate(0, 10 * sin(t * 1.8));
+        scale(scaleAmt);
+        rotate(tilt);
+
+        let shift = 100;
+
+        fill(bodyColor);
+        triangle(200 + shift, 60, 100 + shift, 300, 300 + shift, 300);
+
+        let armYOffset = 10 * sin(t * 2.5);
+        fill(bodyColor);
+        circle(80 + shift, 200 + armYOffset, 60);
+        circle(320 + shift, 200 - armYOffset, 60);
+
+        let legScale = 1.0 + 0.2 * sin(t * 3);
+        circle(150 + shift, 320, 50 * legScale);
+        circle(250 + shift, 320, 50 * legScale);
+
+        fill(pantsColor);
+        rect(100 + shift, 250, 200, 50);
+
+        let eyeBlink = 0.5 + 0.5 * abs(sin(t * 4));
+        let eyeSize = 40 * eyeBlink;
+        let pupilSize = 14 * eyeBlink;
+
+        let eyeFollow = map(mouseX, 0, width, -4, 4);
+        let eyeUpDown = map(mouseY, 0, height, -2, 2);
+
+        fill(0, 0, 100);
+        circle(170 + shift, 160, eyeSize);
+        circle(230 + shift, 160, eyeSize);
+
+        fill(0, 0, 0);
+        circle(170 + shift + eyeFollow, 160 + eyeUpDown, pupilSize);
+        circle(230 + shift + eyeFollow, 160 + eyeUpDown, pupilSize);
+
+        let mouthWave = 3 * sin(t * 3);
+        stroke(0, 100, 70);
+        strokeWeight(3);
+        noFill();
+        beginShape();
+        for (let i = 0; i <= 10; i++) {
+          let x = lerp(170 + shift, 230 + shift, i / 10.0);
+          let y = 190 + mouthWave * sin(i * 0.7 + t * 4);
+          vertex(x, y);
+        }
+        endShape();
+
+        pop();
+      }
+
+      function mousePressed() {
+        if (!recording) {
+          recording = true;
+          if (typeof saveGif === 'function') {
+            saveGif('patrick_sand_bubble_world', 10);
+          }
+        }
+      }
+    </script>
+  </body>
+</html>
